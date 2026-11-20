@@ -38,7 +38,7 @@ const checkout = async () => {
   if (cart.length === 0) return;
 
   try {
-    const response = await fetch("http://localhost:5000/api/checkout", {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/checkout`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
