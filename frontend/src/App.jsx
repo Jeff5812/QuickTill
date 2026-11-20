@@ -6,9 +6,12 @@ function App() {
     { id: 2, name: 'Sandwich', price: 3500, emoji: '🥪' },
     { id: 3, name: 'Orange Juice', price: 2000, emoji: '🧃' },
     { id: 4, name: 'Donut', price: 1200, emoji: '🍩' },
+    { id: 5, name: 'Meat Pie', price: 1800, emoji: '🥧' },
+    { id: 6, name: 'Bottled Water', price: 700, emoji: '💧' },
   ];
 
   const [cart, setCart] = useState([]);
+  const [checkoutResult, setCheckoutResult] = useState(null);
 
   const addToCart = (product) => {
     setCart((current) => {
@@ -31,15 +34,52 @@ function App() {
     0
   );
 
+const checkout = async () => {
+  if (cart.length === 0) return;
+
+  try {
+    const response = await fetch("http://localhost:5000/api/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        items: cart.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+        })),
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Checkout failed.");
+    }
+
+    setCheckoutResult(data);
+setCart([]);
+  } catch (error) {
+    alert(error.message || "Could not connect to the server.");
+  }
+};
+
+
   const formatPrice = (price) =>
     `₦${price.toLocaleString('en-NG')}`;
 
   return (
     <div style={styles.page}>
       <header style={styles.header}>
-        <h1 style={styles.logo}>QuickTill<span>.</span></h1>
-        <p>Simple sales. Smarter checkout.</p>
-      </header>
+  <div style={styles.brandMark}>QT</div>
+
+  <div style={styles.brandCenter}>
+    <h1 style={styles.logo}>QuickTill<span>.</span></h1>
+    <p style={styles.tagline}>Simple sales. Smarter checkout.</p>
+  </div>
+
+  <div style={styles.headerSpacer}></div>
+</header>
 
       <main style={styles.main}>
         <section style={styles.productsSection}>
@@ -86,12 +126,43 @@ function App() {
           <button
             style={styles.checkoutButton}
             disabled={cart.length === 0}
-            onClick={() => alert('Checkout demo coming soon!')}
+            onClick={checkout}
           >
             Proceed to checkout
           </button>
         </section>
       </main>
+
+{checkoutResult && (
+  <div style={styles.modalOverlay}>
+    <div style={styles.modal}>
+      <div style={styles.successIcon}>✓</div>
+
+      <h2>Order successful!</h2>
+      <p style={styles.modalSubtitle}>
+        Your checkout is complete. Thanks for shopping with QuickTill!
+      </p>
+
+      <div style={styles.orderDetails}>
+        <p>Order ID</p>
+        <strong>{checkoutResult.orderId}</strong>
+
+        <p>Total paid</p>
+        <strong style={styles.modalTotal}>
+          ₦{checkoutResult.total.toLocaleString("en-NG")}
+        </strong>
+      </div>
+
+      <button
+        style={styles.modalButton}
+        onClick={() => setCheckoutResult(null)}
+      >
+        Done
+      </button>
+    </div>
+  </div>
+)}
+
 
       <footer style={styles.footer}>
         QuickTill © 2026 · Demo Point of Sale Application
@@ -107,18 +178,55 @@ const styles = {
     color: '#202938',
     fontFamily: 'Arial, sans-serif',
   },
-  header: {
-    background: '#172554',
-    color: 'white',
-    padding: '24px 7%',
-  },
-  logo: { margin: 0, fontSize: '28px' },
+  
+header: {
+  background: '#172554',
+  color: 'white',
+  padding: '22px 7%',
+  display: 'flex',
+  alignItems: 'center',
+  minHeight: '110px',
+},
+brandMark: {
+  width: '48px',
+  height: '48px',
+  borderRadius: '12px',
+  background: '#2563eb',
+  color: 'white',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontWeight: 'bold',
+  fontSize: '18px',
+  flexShrink: 0,
+},
+brandCenter: {
+  flex: 1,
+  textAlign: 'center',
+},
+logo: {
+  margin: 0,
+  fontSize: '30px',
+  color: '#ffffff',
+  letterSpacing: '-1px',
+},
+tagline: {
+  margin: '8px 0 0',
+  color: '#dbeafe',
+  fontSize: '16px',
+},
+headerSpacer: {
+  width: '48px',
+  flexShrink: 0,
+},
+
   main: {
-    display: 'grid',
-    gridTemplateColumns: '2fr 1fr',
-    gap: '30px',
-    padding: '40px 7%',
-  },
+  display: 'grid',
+  gridTemplateColumns: '2fr 1fr',
+  gap: '36px',
+  padding: '60px 7%',
+  alignItems: 'start',
+},
   productsSection: { minWidth: 0 },
   subtitle: { color: '#718096', marginTop: '5px' },
   productGrid: {
@@ -181,6 +289,64 @@ const styles = {
     padding: '25px',
     color: '#718096',
   },
+
+modalOverlay: {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(15, 23, 42, 0.65)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: '20px',
+  zIndex: 1000,
+},
+modal: {
+  background: 'white',
+  borderRadius: '20px',
+  padding: '35px',
+  width: '100%',
+  maxWidth: '400px',
+  textAlign: 'center',
+  boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+},
+successIcon: {
+  width: '65px',
+  height: '65px',
+  borderRadius: '50%',
+  background: '#dcfce7',
+  color: '#16a34a',
+  fontSize: '38px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  margin: '0 auto 18px',
+  fontWeight: 'bold',
+},
+modalSubtitle: {
+  color: '#718096',
+  lineHeight: 1.6,
+},
+orderDetails: {
+  background: '#f4f6fa',
+  borderRadius: '12px',
+  padding: '18px',
+  margin: '25px 0',
+  textAlign: 'left',
+},
+modalTotal: {
+  fontSize: '23px',
+  color: '#16a34a',
+},
+modalButton: {
+  width: '100%',
+  padding: '14px',
+  border: 'none',
+  borderRadius: '9px',
+  background: '#172554',
+  color: 'white',
+  fontWeight: 'bold',
+  cursor: 'pointer',
+},
 };
 
 export default App;
